@@ -1,4 +1,5 @@
 import 'package:attandance_management_app/Dashboards/SchoolDashboard.dart';
+import 'package:attandance_management_app/authntication/Login.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -199,6 +200,17 @@ class _SchoolRegistrationState extends State<SchoolRegistration> {
                       style: TextStyle(color: Colors.white, fontSize: 16),
                     ),
                   ),
+                  SizedBox(
+                    height: size.height * 0.03,
+                  ),
+                  ElevatedButton(
+                      onPressed: () {
+                        Navigator.pushReplacement(
+                          context,
+                          MaterialPageRoute(builder: (context) => Login()),
+                        );
+                      },
+                      child: Text("login"))
                 ],
               ),
             ),

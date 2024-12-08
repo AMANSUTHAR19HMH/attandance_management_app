@@ -13,7 +13,7 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
         body: Center(
           child:
           const Text(
-            "Register Your School",
+            "Your School Dashboard ",
             textAlign: TextAlign.center,
             style: TextStyle(
               fontSize: 30,
