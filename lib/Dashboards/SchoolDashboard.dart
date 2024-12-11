@@ -1,6 +1,8 @@
+import 'package:attandance_management_app/Student/addStudents.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_speed_dial/flutter_speed_dial.dart'; // Add this package for floating action button animations
 
 import '../Attendance/MarkAttendance.dart';
 import '../Attendance/ViewAttendance.dart';
@@ -14,6 +16,7 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
   int _selectedIndex = 0;
   int totalStudents = 0;
   int totalTeachers = 0;
+  String schoolId = "";
   double pendingFees = 0.0;
   double dailyAttendancePercentage = 0.0;
   String schoolName = "Loading...";
@@ -29,8 +32,11 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
   @override
   void initState() {
     super.initState();
-    fetchSchoolData();
-    fetchStatistics();
+    fetchSchoolData().then((_) {
+      if (schoolId.isNotEmpty) {
+        fetchStatistics(schoolId);
+      }
+    });
   }
 
   void _onTap(int index) {
@@ -61,9 +67,13 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
       if (querySnapshot.docs.isNotEmpty) {
         var schoolData =
         querySnapshot.docs.first.data() as Map<String, dynamic>;
+        schoolId = querySnapshot.docs.first.id; // Get the school ID
+        print("School ID: $schoolId");
         setState(() {
           schoolName = schoolData['SchoolName'] ?? "Unknown School";
         });
+        // Store schoolId for later use (pass it to AddStudents)
+        // You can store it in a class-level variable or pass it directly where needed
       } else {
         setState(() {
           schoolName = "School not found!";
@@ -77,24 +87,33 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
     }
   }
 
-  Future<void> fetchStatistics() async {
+  Future<void> fetchStatistics(String schoolId) async {
+    if (schoolId.isEmpty) {
+      print("Error: schoolId is empty. Cannot fetch statistics.");
+      return;
+    }
     try {
-      // Replace these Firebase queries with actual logic to fetch data
-      final studentsSnapshot =
-      await FirebaseFirestore.instance.collection('Students').get();
-      final teachersSnapshot =
-      await FirebaseFirestore.instance.collection('Teachers').get();
+      final studentsSnapshot = await FirebaseFirestore.instance
+          .collection('Schools')
+          .doc(schoolId)
+          .collection('Students')
+          .get();
 
-      // Dummy data for attendance and fees
-      final dailyAttendance = 87.5;
-      final totalPendingFees = 25000.0;
+      final teachersSnapshot = await FirebaseFirestore.instance
+          .collection('Schools')
+          .doc(schoolId)
+          .collection('Teachers')
+          .get();
 
       setState(() {
         totalStudents = studentsSnapshot.size;
         totalTeachers = teachersSnapshot.size;
-        dailyAttendancePercentage = dailyAttendance;
-        pendingFees = totalPendingFees;
+        dailyAttendancePercentage = 87.5; // Example value
+        pendingFees = 25000.0; // Example value
       });
+
+      print("Total students: $totalStudents");
+      print("Total teachers: $totalTeachers");
     } catch (e) {
       print("Error fetching statistics: $e");
     }
@@ -102,98 +121,146 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
 
   @override
   Widget build(BuildContext context) {
-    double screenHeight = MediaQuery.of(context).size.height;
-
     return Scaffold(
       appBar: AppBar(
         title: Text(
           "Welcome, $schoolName",
         ),
       ),
-      body: _selectedIndex == 0
-          ? Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: SingleChildScrollView(
+      body: RefreshIndicator(
+        onRefresh: () async {
+          await fetchSchoolData();
+          await fetchStatistics(schoolId);
+        },
+        child: _selectedIndex == 0
+            ? SingleChildScrollView(
+          physics: const AlwaysScrollableScrollPhysics(),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text(
-                "Key Statistics",
-                style:
-                TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+              const Padding(
+                padding: EdgeInsets.all(16.0),
+                child: Text(
+                  "Key Statistics",
+                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+                ),
               ),
               const SizedBox(height: 16),
-              // Wrap GridView in a SizedBox to prevent infinite height issue
-              SizedBox(
-                height: screenHeight * 0.5, // Adjust the height dynamically
-                child: GridView.count(
+              GridView.builder(
+                shrinkWrap: true,
+                physics: const NeverScrollableScrollPhysics(),
+                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
                   crossAxisCount: 2,
                   crossAxisSpacing: 16,
                   mainAxisSpacing: 16,
-                  shrinkWrap: true, // Prevents GridView from taking infinite height
-                  physics: NeverScrollableScrollPhysics(), // Disables GridView scrolling
-                  children: [
-                    _buildStatisticCard(
-                      "Total Students",
-                      totalStudents.toString(),
-                      Icons.group,
-                      Colors.blue,
-                    ),
-                    _buildStatisticCard(
-                      "Total Teachers",
-                      totalTeachers.toString(),
-                      Icons.person,
-                      Colors.green,
-                    ),
-                    _buildStatisticCard(
-                      "Attendance",
-                      "${dailyAttendancePercentage.toStringAsFixed(1)}% Present",
-                      Icons.check_circle_outline,
-                      Colors.orange,
-                    ),
-                    _buildStatisticCard(
-                      "Pending Fees",
-                      "₹${pendingFees.toStringAsFixed(2)}",
-                      Icons.monetization_on,
-                      Colors.red,
-                    ),
-                  ],
+                  childAspectRatio: 1,
                 ),
+                itemCount: 4,
+                itemBuilder: (context, index) {
+                  final List<Map<String, dynamic>> stats = [
+                    {
+                      "title": "Total Students",
+                      "value": totalStudents.toString(),
+                      "icon": Icons.group,
+                      "color": Colors.blue,
+                    },
+                    {
+                      "title": "Total Teachers",
+                      "value": totalTeachers.toString(),
+                      "icon": Icons.person,
+                      "color": Colors.green,
+                    },
+                    {
+                      "title": "Attendance",
+                      "value": "${dailyAttendancePercentage.toStringAsFixed(1)}% Present",
+                      "icon": Icons.check_circle_outline,
+                      "color": Colors.orange,
+                    },
+                    {
+                      "title": "Pending Fees",
+                      "value": "₹${pendingFees.toStringAsFixed(2)}",
+                      "icon": Icons.monetization_on,
+                      "color": Colors.red,
+                    },
+                  ];
+
+                  return _buildStatisticCard(
+                    stats[index]['title'],
+                    stats[index]['value'],
+                    stats[index]['icon'],
+                    stats[index]['color'],
+                  );
+                },
               ),
             ],
           ),
-        ),
-      )
-          : _widgetOptions.elementAt(_selectedIndex),
-      bottomNavigationBar: BottomNavigationBar(
-        items: const [
-          BottomNavigationBarItem(
-            icon: Icon(Icons.dashboard),
-            label: "Dashboard",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.check_circle_outline),
-            label: "Mark Attendance",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.notifications),
-            label: "Notifications",
-          ),
-          BottomNavigationBarItem(
-            icon: Icon(Icons.person),
-            label: "Profile",
-          ),
-        ],
-        currentIndex: _selectedIndex,
-        selectedItemColor: Colors.black,
-        unselectedItemColor: Colors.green,
-        onTap: _onTap,
+        )
+            : _widgetOptions.elementAt(_selectedIndex),
       ),
-    );
-  }
 
-  Widget _buildStatisticCard(
-      String title, String value, IconData icon, Color color) {
+
+      bottomNavigationBar: BottomNavigationBar(
+    items: const [
+    BottomNavigationBarItem(
+    icon: Icon(Icons.dashboard),
+    label: "Dashboard",
+    ),
+    BottomNavigationBarItem(
+    icon: Icon(Icons.check_circle_outline),
+    label: "Mark Attendance",
+    ),
+    BottomNavigationBarItem(
+    icon: Icon(Icons.notifications),
+    label: "Notifications",
+    ),
+    BottomNavigationBarItem(
+    icon: Icon(Icons.person),
+    label: "Profile",
+    ),
+    ],
+    currentIndex: _selectedIndex,
+    selectedItemColor: Colors.black,
+    unselectedItemColor: Colors.green,
+    onTap: _onTap,
+    ),
+    floatingActionButton: SpeedDial(
+    animatedIcon: AnimatedIcons.menu_close,
+    backgroundColor: Colors.blue,
+    overlayOpacity: 0.5,
+    children: [
+    SpeedDialChild(
+    child: Icon(Icons.person_add),
+    label: "Add Student",
+    backgroundColor: Colors.green,
+    onTap: () {
+    Navigator.push(
+    context,
+    MaterialPageRoute(
+    builder: (context) => AddStudents(schoolID: schoolId),
+    ),
+    );
+    },
+    ),
+    SpeedDialChild(
+    child: Icon(Icons.person_outline),
+    label: "Add Teacher",
+    backgroundColor: Colors.orange,
+    onTap: () {
+    Navigator.push(
+    context,
+    MaterialPageRoute(
+    builder: (context) => AddTeacherPage(),
+    ),
+    );
+    },
+    ),
+    ],
+    ),
+    );
+    }
+
+  Widget _buildStatisticCard(String title, String value, IconData icon,
+      Color color) {
     return Card(
       elevation: 4,
       shape: RoundedRectangleBorder(
@@ -219,6 +286,20 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+class AddTeacherPage extends StatelessWidget {
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text("Add Teacher"),
+      ),
+      body: Center(
+        child: Text("Add Teacher Page"),
       ),
     );
   }
