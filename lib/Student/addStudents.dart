@@ -3,8 +3,11 @@ import 'package:flutter/material.dart';
 
 class AddStudents extends StatefulWidget {
   final String schoolID;
+  final VoidCallback onStudentAdded;
 
-  const AddStudents({required this.schoolID, Key? key}) : super(key: key);
+  AddStudents({required this.schoolID, required this.onStudentAdded});
+
+  // const AddStudents({required this.schoolID, Key? key}) : super(key: key);
 
   @override
   _AddStudentsState createState() => _AddStudentsState();
@@ -22,7 +25,6 @@ class _AddStudentsState extends State<AddStudents> {
   Future<void> _addStudent() async {
     if (_formKey.currentState?.validate() ?? false) {
       try {
-        // Add student data to Firestore
         await FirebaseFirestore.instance
             .collection('Schools')
             .doc(widget.schoolID)
@@ -41,6 +43,7 @@ class _AddStudentsState extends State<AddStudents> {
 
         // Show success message
         ScaffoldMessenger.of(context).showSnackBar(
+
           const SnackBar(content: Text('Student added successfully!')),
         );
 
@@ -51,6 +54,8 @@ class _AddStudentsState extends State<AddStudents> {
         _rollNumberController.clear();
         _parentPhoneController.clear();
         _parentEmailController.clear();
+        widget.onStudentAdded();
+        Navigator.pop(context);
       } catch (e) {
         // Show error message
         ScaffoldMessenger.of(context).showSnackBar(
@@ -87,7 +92,9 @@ class _AddStudentsState extends State<AddStudents> {
                     labelText: 'Student ID',
                   ),
                   validator: (value) =>
-                  value?.isEmpty ?? true ? 'Please enter a student ID' : null,
+                  value?.isEmpty ?? true
+                      ? 'Please enter a student ID'
+                      : null,
                 ),
                 TextFormField(
                   controller: _classIDController,
@@ -102,7 +109,8 @@ class _AddStudentsState extends State<AddStudents> {
                   decoration: const InputDecoration(
                     labelText: 'Roll Number',
                   ),
-                  validator: (value) => value?.isEmpty ?? true
+                  validator: (value) =>
+                  value?.isEmpty ?? true
                       ? 'Please enter a roll number'
                       : null,
                 ),
@@ -112,7 +120,8 @@ class _AddStudentsState extends State<AddStudents> {
                     labelText: 'Parent Phone',
                   ),
                   keyboardType: TextInputType.phone,
-                  validator: (value) => value?.isEmpty ?? true
+                  validator: (value) =>
+                  value?.isEmpty ?? true
                       ? 'Please enter a parent\'s phone number'
                       : null,
                 ),
@@ -123,7 +132,9 @@ class _AddStudentsState extends State<AddStudents> {
                   ),
                   keyboardType: TextInputType.emailAddress,
                   validator: (value) =>
-                  value?.isEmpty ?? true ? 'Please enter a parent\'s email' : null,
+                  value?.isEmpty ?? true
+                      ? 'Please enter a parent\'s email'
+                      : null,
                 ),
                 const SizedBox(height: 20),
                 ElevatedButton(

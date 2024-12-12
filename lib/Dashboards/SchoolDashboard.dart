@@ -1,4 +1,5 @@
 import 'package:attandance_management_app/Student/addStudents.dart';
+import 'package:attandance_management_app/Student/studetnList.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
@@ -6,6 +7,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart'; // Add this package
 
 import '../Attendance/MarkAttendance.dart';
 import '../Attendance/ViewAttendance.dart';
+import '../teacher/addTeacher.dart';
 
 class SchoolDashboard extends StatefulWidget {
   @override
@@ -66,7 +68,7 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
 
       if (querySnapshot.docs.isNotEmpty) {
         var schoolData =
-        querySnapshot.docs.first.data() as Map<String, dynamic>;
+            querySnapshot.docs.first.data() as Map<String, dynamic>;
         schoolId = querySnapshot.docs.first.id; // Get the school ID
         print("School ID: $schoolId");
         setState(() {
@@ -134,173 +136,183 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
         },
         child: _selectedIndex == 0
             ? SingleChildScrollView(
-          physics: const AlwaysScrollableScrollPhysics(),
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              const Padding(
-                padding: EdgeInsets.all(16.0),
-                child: Text(
-                  "Key Statistics",
-                  style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
-                ),
-              ),
-              const SizedBox(height: 16),
-              GridView.builder(
-                shrinkWrap: true,
-                physics: const NeverScrollableScrollPhysics(),
-                gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-                  crossAxisCount: 2,
-                  crossAxisSpacing: 16,
-                  mainAxisSpacing: 16,
-                  childAspectRatio: 1,
-                ),
-                itemCount: 4,
-                itemBuilder: (context, index) {
-                  final List<Map<String, dynamic>> stats = [
-                    {
-                      "title": "Total Students",
-                      "value": totalStudents.toString(),
-                      "icon": Icons.group,
-                      "color": Colors.blue,
-                    },
-                    {
-                      "title": "Total Teachers",
-                      "value": totalTeachers.toString(),
-                      "icon": Icons.person,
-                      "color": Colors.green,
-                    },
-                    {
-                      "title": "Attendance",
-                      "value": "${dailyAttendancePercentage.toStringAsFixed(1)}% Present",
-                      "icon": Icons.check_circle_outline,
-                      "color": Colors.orange,
-                    },
-                    {
-                      "title": "Pending Fees",
-                      "value": "₹${pendingFees.toStringAsFixed(2)}",
-                      "icon": Icons.monetization_on,
-                      "color": Colors.red,
-                    },
-                  ];
+                physics: const AlwaysScrollableScrollPhysics(),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Padding(
+                      padding: EdgeInsets.all(16.0),
+                      child: Text(
+                        "Key Statistics",
+                        style: TextStyle(
+                            fontSize: 20, fontWeight: FontWeight.bold),
+                      ),
+                    ),
+                    const SizedBox(height: 16),
+                    GridView.builder(
+                      shrinkWrap: true,
+                      physics: const NeverScrollableScrollPhysics(),
+                      gridDelegate:
+                          const SliverGridDelegateWithFixedCrossAxisCount(
+                        crossAxisCount: 2,
+                        crossAxisSpacing: 16,
+                        mainAxisSpacing: 16,
+                        childAspectRatio: 1,
+                      ),
+                      itemCount: 4,
+                      itemBuilder: (context, index) {
+                        final List<Map<String, dynamic>> stats = [
+                          {
+                            "title": "Total Students",
+                            "value": totalStudents.toString(),
+                            "icon": Icons.group,
+                            "color": Colors.blue,
+                            "onTap": () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) => StudentListPage(schoolID: schoolId),
+                                ),
+                              );
+                            },
+                          },
+                          {
+                            "title": "Total Teachers",
+                            "value": totalTeachers.toString(),
+                            "icon": Icons.person,
+                            "color": Colors.green,
+                          },
+                          {
+                            "title": "Attendance",
+                            "value": "${dailyAttendancePercentage.toStringAsFixed(1)}% Present",
+                            "icon": Icons.check_circle_outline,
+                            "color": Colors.orange,
+                          },
+                          {
+                            "title": "Pending Fees",
+                            "value": "₹${pendingFees.toStringAsFixed(2)}",
+                            "icon": Icons.monetization_on,
+                            "color": Colors.red,
+                          },
+                        ];
 
-                  return _buildStatisticCard(
-                    stats[index]['title'],
-                    stats[index]['value'],
-                    stats[index]['icon'],
-                    stats[index]['color'],
-                  );
-                },
+                        return _buildStatisticCard(
+                          stats[index]['title'],
+                          stats[index]['value'],
+                          stats[index]['icon'],
+                          stats[index]['color'],
+                          onTap: stats[index]['onTap'],
+                        );
+                      },
+                    ),
+                  ],
+                ),
+              )
+            : _widgetOptions.elementAt(_selectedIndex),
+      ),
+      bottomNavigationBar: BottomNavigationBar(
+        items: const [
+          BottomNavigationBarItem(
+            icon: Icon(Icons.dashboard),
+            label: "Dashboard",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.check_circle_outline),
+            label: "Mark Attendance",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.notifications),
+            label: "Notifications",
+          ),
+          BottomNavigationBarItem(
+            icon: Icon(Icons.person),
+            label: "Profile",
+          ),
+        ],
+        currentIndex: _selectedIndex,
+        selectedItemColor: Colors.black,
+        unselectedItemColor: Colors.green,
+        onTap: _onTap,
+      ),
+      floatingActionButton: SpeedDial(
+        animatedIcon: AnimatedIcons.menu_close,
+        backgroundColor: Colors.blue,
+        overlayOpacity: 0.5,
+        children: [
+          SpeedDialChild(
+            child: Icon(Icons.person_add),
+            label: "Add Student",
+            backgroundColor: Colors.green,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddStudents(
+                    schoolID: schoolId,
+                    onStudentAdded: () {
+                      fetchStatistics(schoolId);
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+          SpeedDialChild(
+            child: Icon(Icons.person_outline),
+            label: "Add Teacher",
+            backgroundColor: Colors.orange,
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (context) => AddTeacherPage(
+                    schoolID: schoolId,
+                    onTeacherAdded: () {
+                      fetchStatistics(
+                          schoolId); // Refresh statistics immediately
+                    },
+                  ),
+                ),
+              );
+            },
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildStatisticCard(
+      String title, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Card(
+        elevation: 4,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(16.0),
+          child: Column(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              Icon(icon, size: 40, color: color),
+              const SizedBox(height: 8),
+              Text(
+                title,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                textAlign: TextAlign.center,
+              ),
+              const SizedBox(height: 8),
+              Text(
+                value,
+                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                textAlign: TextAlign.center,
               ),
             ],
           ),
-        )
-            : _widgetOptions.elementAt(_selectedIndex),
-      ),
-
-
-      bottomNavigationBar: BottomNavigationBar(
-    items: const [
-    BottomNavigationBarItem(
-    icon: Icon(Icons.dashboard),
-    label: "Dashboard",
-    ),
-    BottomNavigationBarItem(
-    icon: Icon(Icons.check_circle_outline),
-    label: "Mark Attendance",
-    ),
-    BottomNavigationBarItem(
-    icon: Icon(Icons.notifications),
-    label: "Notifications",
-    ),
-    BottomNavigationBarItem(
-    icon: Icon(Icons.person),
-    label: "Profile",
-    ),
-    ],
-    currentIndex: _selectedIndex,
-    selectedItemColor: Colors.black,
-    unselectedItemColor: Colors.green,
-    onTap: _onTap,
-    ),
-    floatingActionButton: SpeedDial(
-    animatedIcon: AnimatedIcons.menu_close,
-    backgroundColor: Colors.blue,
-    overlayOpacity: 0.5,
-    children: [
-    SpeedDialChild(
-    child: Icon(Icons.person_add),
-    label: "Add Student",
-    backgroundColor: Colors.green,
-    onTap: () {
-    Navigator.push(
-    context,
-    MaterialPageRoute(
-    builder: (context) => AddStudents(schoolID: schoolId),
-    ),
-    );
-    },
-    ),
-    SpeedDialChild(
-    child: Icon(Icons.person_outline),
-    label: "Add Teacher",
-    backgroundColor: Colors.orange,
-    onTap: () {
-    Navigator.push(
-    context,
-    MaterialPageRoute(
-    builder: (context) => AddTeacherPage(),
-    ),
-    );
-    },
-    ),
-    ],
-    ),
-    );
-    }
-
-  Widget _buildStatisticCard(String title, String value, IconData icon,
-      Color color) {
-    return Card(
-      elevation: 4,
-      shape: RoundedRectangleBorder(
-        borderRadius: BorderRadius.circular(12),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.all(16.0),
-        child: Column(
-          mainAxisAlignment: MainAxisAlignment.center,
-          children: [
-            Icon(icon, size: 40, color: color),
-            const SizedBox(height: 8),
-            Text(
-              title,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
-              textAlign: TextAlign.center,
-            ),
-            const SizedBox(height: 8),
-            Text(
-              value,
-              style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
-              textAlign: TextAlign.center,
-            ),
-          ],
         ),
       ),
     );
   }
-}
 
-class AddTeacherPage extends StatelessWidget {
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      appBar: AppBar(
-        title: Text("Add Teacher"),
-      ),
-      body: Center(
-        child: Text("Add Teacher Page"),
-      ),
-    );
-  }
 }
