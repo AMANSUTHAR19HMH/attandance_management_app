@@ -8,6 +8,7 @@ import 'package:flutter_speed_dial/flutter_speed_dial.dart'; // Add this package
 import '../Attendance/MarkAttendance.dart';
 import '../Attendance/ViewAttendance.dart';
 import '../teacher/addTeacher.dart';
+import '../teacher/teacherList.dart';
 
 class SchoolDashboard extends StatefulWidget {
   @override
@@ -171,7 +172,8 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
                               Navigator.push(
                                 context,
                                 MaterialPageRoute(
-                                  builder: (context) => StudentListPage(schoolID: schoolId),
+                                  builder: (context) =>
+                                      StudentListPage(schoolID: schoolId),
                                 ),
                               );
                             },
@@ -181,10 +183,20 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
                             "value": totalTeachers.toString(),
                             "icon": Icons.person,
                             "color": Colors.green,
+                            "onTap": () {
+                              Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (context) =>
+                                      TeacherListPage(schoolID: schoolId),
+                                ),
+                              );
+                            },
                           },
                           {
                             "title": "Attendance",
-                            "value": "${dailyAttendancePercentage.toStringAsFixed(1)}% Present",
+                            "value":
+                                "${dailyAttendancePercentage.toStringAsFixed(1)}% Present",
                             "icon": Icons.check_circle_outline,
                             "color": Colors.orange,
                           },
@@ -282,7 +294,8 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
   }
 
   Widget _buildStatisticCard(
-      String title, String value, IconData icon, Color color, {VoidCallback? onTap}) {
+      String title, String value, IconData icon, Color color,
+      {VoidCallback? onTap}) {
     return GestureDetector(
       onTap: onTap,
       child: Card(
@@ -299,13 +312,15 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
               const SizedBox(height: 8),
               Text(
                 title,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
                 textAlign: TextAlign.center,
               ),
               const SizedBox(height: 8),
               Text(
                 value,
-                style: const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
+                style:
+                    const TextStyle(fontSize: 16, fontWeight: FontWeight.w500),
                 textAlign: TextAlign.center,
               ),
             ],
@@ -314,5 +329,4 @@ class _SchoolDashboardState extends State<SchoolDashboard> {
       ),
     );
   }
-
 }

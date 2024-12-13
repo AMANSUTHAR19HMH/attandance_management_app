@@ -1,22 +1,28 @@
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-class StudentListPage extends StatelessWidget {
+class TeacherListPage extends StatelessWidget {
   final String schoolID;
 
-  StudentListPage({required this.schoolID});
+  TeacherListPage({required this.schoolID});
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
       appBar: AppBar(
-        title: const Text("Students List"),
+        title: const Text("Teacher List"),
+        leading: IconButton(
+          icon: const Icon(Icons.arrow_back),
+          onPressed: () {
+            Navigator.pop(context); // Navigate back to the previous screen
+          },
+        ), // Enables back button automatically
       ),
       body: FutureBuilder<QuerySnapshot>(
         future: FirebaseFirestore.instance
             .collection('Schools')
             .doc(schoolID)
-            .collection('Students')
+            .collection('Teachers')
             .get(),
         builder: (context, snapshot) {
           if (snapshot.connectionState == ConnectionState.waiting) {
@@ -25,27 +31,26 @@ class StudentListPage extends StatelessWidget {
 
           if (snapshot.hasError) {
             return const Center(
-              child: Text("Failed to load students"),
+              child: Text("Failed to load Teachers"),
             );
           }
 
           if (!snapshot.hasData || snapshot.data!.docs.isEmpty) {
             return const Center(
-              child: Text("No students found"),
+              child: Text("No Teachers found"),
             );
           }
 
-          final students = snapshot.data!.docs;
+          final teachers = snapshot.data!.docs;
 
           return ListView.builder(
             padding: const EdgeInsets.all(8.0),
-            itemCount: students.length,
+            itemCount: teachers.length,
             itemBuilder: (context, index) {
-              final student = students[index].data() as Map<String, dynamic>;
-              final studentName = student['Name'] ?? 'Unknown';
-              final studentId = student['StudentID'] ?? 'Unknown';
-              final studentRollNumber = student['RollNumber'] ?? 'N/A';
-              final studentImage = student['ImageUrl'] ??
+              final teacher = teachers[index].data() as Map<String, dynamic>;
+              final teacherName = teacher['Name'] ?? 'Unknown';
+              final teacherPhoneNumber = teacher['Phone'] ?? 'N/A';
+              final teacherImage = teacher['ImageUrl'] ??
                   'https://via.placeholder.com/150'; // Placeholder image
 
               return Card(
@@ -56,22 +61,21 @@ class StudentListPage extends StatelessWidget {
                 margin: const EdgeInsets.symmetric(vertical: 6),
                 child: ListTile(
                   leading: CircleAvatar(
-                    backgroundImage: NetworkImage(studentImage),
-                    onBackgroundImageError: (error, stackTrace) {
-                      // Use placeholder icon on image error
-                      // return const Icon(Icons.person);
-                    },
                     radius: 24,
+                    backgroundImage: NetworkImage(teacherImage),
+                    onBackgroundImageError: (_, __) {
+                      // Use placeholder icon if the image fails to load
+                    },
                   ),
                   title: Text(
-                    studentName,
+                    teacherName,
                     style: const TextStyle(
                       fontSize: 16,
                       fontWeight: FontWeight.bold,
                     ),
                   ),
                   subtitle: Text(
-                    "Roll No: $studentRollNumber",
+                    "Phone No: $teacherPhoneNumber",
                     style: const TextStyle(
                       fontSize: 14,
                       color: Colors.grey,
@@ -81,13 +85,13 @@ class StudentListPage extends StatelessWidget {
                     onSelected: (value) {
                       switch (value) {
                         case 'Edit':
-                          _editStudent(context, schoolID, studentId, student);
+                          _editTeacher(context, schoolID, teachers[index].id);
                           break;
                         case 'Delete':
-                          _deleteStudent(context, schoolID, studentId);
+                          _deleteTeacher(context, schoolID, teachers[index].id);
                           break;
                         case 'View Details':
-                          _viewStudentDetails(context, student);
+                          _viewTeacherDetails(context, teacher);
                           break;
                       }
                     },
@@ -115,18 +119,17 @@ class StudentListPage extends StatelessWidget {
     );
   }
 
-  void _editStudent(
-      BuildContext context, String schoolID, String studentID, Map student) {
-
-    print("Edit student: $studentID");
+  void _editTeacher(BuildContext context, String schoolID, String teacherID) {
+    // Navigate to an edit teacher page or show an editing dialog
+    print("Edit Teacher: $teacherID");
   }
 
-  void _deleteStudent(BuildContext context, String schoolID, String studentID) {
+  void _deleteTeacher(BuildContext context, String schoolID, String teacherID) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Delete Student"),
-        content: const Text("Are you sure you want to delete this student?"),
+        title: const Text("Delete Teacher"),
+        content: const Text("Are you sure you want to delete this teacher?"),
         actions: [
           TextButton(
             onPressed: () => Navigator.pop(context),
@@ -138,17 +141,17 @@ class StudentListPage extends StatelessWidget {
                 await FirebaseFirestore.instance
                     .collection('Schools')
                     .doc(schoolID)
-                    .collection('Students')
-                    .doc(studentID)
+                    .collection('Teachers')
+                    .doc(teacherID)
                     .delete();
                 Navigator.pop(context);
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Student deleted successfully")),
+                  const SnackBar(content: Text("Teacher deleted successfully")),
                 );
               } catch (e) {
-                print("Failed to delete student: $e");
+                print("Failed to delete teacher: $e");
                 ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("Failed to delete student")),
+                  const SnackBar(content: Text("Failed to delete teacher")),
                 );
               }
             },
@@ -159,21 +162,18 @@ class StudentListPage extends StatelessWidget {
     );
   }
 
-  void _viewStudentDetails(BuildContext context, Map student) {
+  void _viewTeacherDetails(BuildContext context, Map<String, dynamic> teacher) {
     showDialog(
       context: context,
       builder: (context) => AlertDialog(
-        title: const Text("Student Details"),
+        title: const Text("Teacher Details"),
         content: Column(
           mainAxisSize: MainAxisSize.min,
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Text("Name: ${student['Name'] ?? 'N/A'}"),
-            Text("Roll No: ${student['RollNumber'] ?? 'N/A'}"),
-            Text(
-                "Parent Phone: ${student['ParentContact']?['Phone'] ?? 'N/A'}"),
-            Text(
-                "Parent Email: ${student['ParentContact']?['Email'] ?? 'N/A'}"),
+            Text("Name: ${teacher['Name'] ?? 'N/A'}"),
+            Text("Phone: ${teacher['Phone'] ?? 'N/A'}"),
+            Text("Email: ${teacher['Email'] ?? 'N/A'}"),
           ],
         ),
         actions: [
